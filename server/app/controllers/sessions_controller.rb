@@ -1,3 +1,4 @@
+load 'api_key.rb'
 class SessionsController < ApplicationController
 
     def googleAuth
@@ -63,6 +64,26 @@ class SessionsController < ApplicationController
         # byebug
         render json: parsed_POI["results"]
 
+
+        parsed_message_list["messages"].each do |message_hash|
+            current_msg_id = message_hash["id"]
+            current_msg = RestClient::Request.execute(method: :get, url: "https://www.googleapis.com/gmail/v1/users/#{userID}/messages/#{current_msg_id}",
+            headers: {"Authorization": "Bearer #{access_token}", Accept: "application/json"})
+            parsed_current_msg = JSON.parse(current_msg.body)
+            parsed_current_msg_headers = parsed_current_msg["payload"]["headers"]
+            current_msg_hash = {"sender" => "N/A", "subject" => "N/A"}
+            parsed_current_msg_headers.each do |hash|
+                if hash["name"] == "From"
+                    sender_name_arr = hash["value"].split("<")
+                    current_msg_hash["sender"] = sender_name_arr[0]
+                elsif hash["name"] == "Subject"
+                    current_msg_hash["subject"] = hash["value"]
+                end
+            end
+            mail_hash_arr.push(current_msg_hash)
+            puts "Message Added to Array"
+        end
+        puts "DONE CREATING MESSAGES"
         # user = User.from_omniauth(parsed_token)
         # log_in(user)
         # Access_token is used to authenticate request made from the rails application to the google server
@@ -75,11 +96,50 @@ class SessionsController < ApplicationController
         # redirect_to root_path
     end
 
-    def code 
-        puts params
+        calendar_list = RestClient::Request.execute(method: :get, url: "https://www.googleapis.com/calendar/v3/users/me/calendarList",
+            headers: {"Authorization": "Bearer #{access_token}"})
+
+        parsed_calendar_list = JSON.parse(calendar_list.body)["items"]
+        calendar_id = nil
+        all_calendar_events = []
+        calendar_events = parsed_calendar_list.map do |calendar|
+            begin
+                calendar_id = calendar["id"]
+                current_calendar_event = RestClient::Request.execute(method: :get, url: "https://www.googleapis.com/calendar/v3/calendars/#{calendar_id}/events",
+                    headers: {"Authorization": "Bearer #{access_token}"})
+                parsed_current_calendar_event = JSON.parse(current_calendar_event)
+                all_calendar_events.push(parsed_current_calendar_event)
+            rescue Exception => e
+            end
+        end
+        all_calendar_events = all_calendar_events[0]["items"]
+        upcoming_events_only_arr = []
+        all_calendar_events.each do |event_hash|
+            begin
+                date_string = event_hash["start"]["dateTime"]
+                date_string_arr = date_string.split("T")
+                event_date = Date.strptime(date_string_arr[0], "%Y-%m-%d")
+                current_date = Date.strptime(Time.now.to_s.split(" ")[0], "%Y-%m-%d")
+                if event_date >= current_date
+                    upcoming_events_only_arr.push(event_hash)
+                end
+            rescue Exception => e
+            end
+        end
+
+        poi_res_json = RestClient.get "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=#{params['latitude']},#{params['longitude']}&radius=1500&type=restaurant&key=#{POI_API_KEY}"
+        parsed_POI_json = JSON.parse(poi_res_json) 
+        parsed_POI_arr = parsed_POI_json["results"]
+
+        output_hash = {
+            "emails" => mail_hash_arr,
+            "calendar_events" => upcoming_events_only_arr,
+            "POIs" => parsed_POI_arr
+        }
+        render json: output_hash
     end
 
-    def test
-        puts ("JSONNNNNN")
-    end
+    # def test
+    #     puts ("JSONNNNNN")
+    # end
 end
