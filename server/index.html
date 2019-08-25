@@ -1,4 +1,5 @@
 <html itemscope itemtype="http://schema.org/Article">
+
     <head>
         <title>Google Hub</title>
         <link rel="style-sheet" href="./style.css">
@@ -27,8 +28,78 @@
                     <div class="poi">
                         
                     </div>
+
+<head>
+
+    <link rel="style-sheet" href="./style.css">
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js">
+    </script>
+    <script src="https://apis.google.com/js/client:platform.js?onload=start" async defer>
+    </script>
+    <script>
+        //
+        // navigator.geolocation.getCurrentPosition(function(r){
+        //         // console.log(r)
+        //         // console.log(r.coords.latitude)
+        //         // console.log(r.coords.longitude)
+        //         var lat = r.coords.latitude;
+        //         var long = r.coords.longitude
+
+                
+                // //
+                // fetch(`https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${long}&radius=1500&type=restaurant&key=AIzaSyDZPgGlSIGXZmfNNkT7LoO8cr7joNMyqqo`).then(function(e){
+                //     return e.json()
+                // }).then(r => {
+                //     console.log(r)
+                // })
+
+                // // alt fetch
+                // $.ajax({
+                // type: 'GET',
+                // url: `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${long}&radius=1500&type=restaurant&key=AIzaSyDZPgGlSIGXZmfNNkT7LoO8cr7joNMyqqo`,
+                // headers: {
+                //     'X-Requested-With': 'XMLHttpRequest',
+                //     'Content-Type': 'application/json'
+                // },
+                // contentType: 'application/octet-stream; charset=utf-8',
+                // success: function(result) {
+                //     console.log(result)
+                // }
+                // // body: JSON.stringify({
+                // //     latitude: lat,
+                // //     longitude: long
+                // // })
+                // });
+                //
+        //})
+                
+
+        function start() {
+            gapi.load('auth2', function() {
+            auth2 = gapi.auth2.init({
+                client_id: '247563481751-5v3guf2mir8tffh60n3k80trolcp7cid.apps.googleusercontent.com',
+                scope: "https://mail.google.com"
+                // Scopes to request in addition to 'profile' and 'email'
+                //scope: 'additional_scope'
+            });
+            });
+        }
+    </script>
+</head>
+<body> 
+    <div class="container">
+        
+        <div class="POI-Area column">
+            <div class="content">
+                <div class="title">
+                    Restaurants
+                </div>
+                <div class="poi">
+                    
+
                 </div>
             </div>
+
 
             <div class="Calendar-Area column">
                 <div class="content">
@@ -38,6 +109,12 @@
                     <div class="events">
                         
                     </div>
+
+        <div class="Calendar-Area column">
+            <div class="content">
+                <div class="title">
+                    POI
+
                 </div>
             </div>
 
@@ -60,6 +137,7 @@
             navigator.geolocation.getCurrentPosition(function(r){
                 lat = r.coords.latitude;
                 long = r.coords.longitude;
+
             })
             $('#signinButton').click(function() {
                 // signInCallback defined in step 6.
@@ -132,6 +210,60 @@
                     eventsArea.append(event)
                 }
             }
+
+                console.log(lat)
+            })
+
+        $('#signinButton').click(function() {
+            // signInCallback defined in step 6.
+            auth2.grantOfflineAccess().then(signInCallback);
+        });
+        function signInCallback(authResult) {
+            //console.log(authResult)
+            console.log(long)
+            if (authResult['code']) {
+                $('#signinButton').attr('style', 'display: none');
+                $.ajax({
+                type: 'POST',
+                url: 'http://localhost:3000/auth/goggle_oauth2/callback',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json'
+                },
+                contentType: 'application/octet-stream; charset=utf-8',
+                success: function(result) {
+                    console.log(result)
+                    // yay();
+                    renderRestaurant(result)
+                },
+                processData: false,
+                data: JSON.stringify({ code: authResult['code'], longitude: long, latitude: lat})
+                });
+            } else {
+                // There was an error.
+            }
+        }
+        function renderRestaurant(poiArr){
+            let poiArea = document.querySelector('.poi')
+            for(let x=0;x<poiArr.length;x++){
+                let poi = document.createElement('div')
+                poi.setAttribute('class','poi-instance')
+                let poiTitle = document.createElement('h3')
+                poiTitle.setAttribute('class','poi-title')
+                poiTitle.innerText = poiArr[x].name
+                let poiAddress = document.createElement('p')
+                poiAddress.setAttribute('class','poi-address')
+                poiAddress.innerText = poiArr[x].vicinity
+                let poiRating = document.createElement('p')
+                poiRating.setAttribute('class','poi-rating')
+                poiRating.innerText = "Rating: "+poiArr[x].rating
+                poi.append(poiTitle, poiAddress, poiRating)
+                poiArea.append(poi)
+            }
+        }
+        </script>
+    </div>
+
 
             function renderRestaurants(poiArr){
                 let poiArea = document.querySelector('.poi')

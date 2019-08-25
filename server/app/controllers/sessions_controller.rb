@@ -2,6 +2,7 @@ load 'api_key.rb'
 class SessionsController < ApplicationController
 
     def googleAuth
+        # puts params["long"]
         access_token = nil
         refresh_token = nil
         id_token = nil
@@ -36,10 +37,33 @@ class SessionsController < ApplicationController
         parsed_decoded_token_body = JSON.parse(decoded_token_body)
         userID = parsed_decoded_token_body["sub"]
         
-        message_list = RestClient::Request.execute(method: :get, url: "https://www.googleapis.com/gmail/v1/users/#{userID}/messages",
-            headers: {"Authorization": "Bearer #{access_token}"})
+        # MESSAGES
+        # message_list = RestClient::Request.execute(method: :get, url: "https://www.googleapis.com/gmail/v1/users/#{userID}/messages",
+        #     headers: {"Authorization": "Bearer #{access_token}"})
 
-        parsed_message_list = JSON.parse(message_list)
+        # parsed_message_list = JSON.parse(message_list)
+
+        # parsed_message_list["messages"].each do |message_hash|
+        #     current_msg_id = message_hash["id"]
+        #     current_msg = RestClient::Request.execute(method: :get, url: "https://www.googleapis.com/gmail/v1/users/#{userID}/messages/#{current_msg_id}",
+        #     headers: {"Authorization": "Bearer #{access_token}", Accept: "application/json"})
+        #     parsed_current_msg = JSON.parse(current_msg.body)
+        #     parsed_current_msg_headers = parsed_current_msg["payload"]["headers"]
+        #     parsed_current_msg_headers.each do |hash|
+        #         if hash["name"] == "Subject"
+        #             current_msg_hash = {"subject" => hash["value"]}
+        #             mail_hash_arr.push(current_msg_hash)
+        #         end
+        #     end
+        #     puts "Message Added to Array"
+        # end
+        # puts "DONE CREATING MESSAGES"
+
+        poi_res_JSON = RestClient.get "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=#{params['latitude']},#{params['longitude']}&radius=1500&type=restaurant&key=AIzaSyDZPgGlSIGXZmfNNkT7LoO8cr7joNMyqqo"
+        parsed_POI = JSON.parse(poi_res_JSON) 
+        # byebug
+        render json: parsed_POI["results"]
+
 
         parsed_message_list["messages"].each do |message_hash|
             current_msg_id = message_hash["id"]
@@ -60,6 +84,17 @@ class SessionsController < ApplicationController
             puts "Message Added to Array"
         end
         puts "DONE CREATING MESSAGES"
+        # user = User.from_omniauth(parsed_token)
+        # log_in(user)
+        # Access_token is used to authenticate request made from the rails application to the google server
+        # user.google_token = access_token.credentials.token
+        # Refresh_token to request new access_token
+        # Note: Refresh_token is only sent once during the first request
+        # refresh_token = access_token.credentials.refresh_token
+        # user.google_refresh_token = refresh_token if refresh_token.present?
+        # user.save
+        # redirect_to root_path
+    end
 
         calendar_list = RestClient::Request.execute(method: :get, url: "https://www.googleapis.com/calendar/v3/users/me/calendarList",
             headers: {"Authorization": "Bearer #{access_token}"})
