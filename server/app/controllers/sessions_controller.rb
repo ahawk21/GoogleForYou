@@ -60,7 +60,7 @@ class SessionsController < ApplicationController
 
         poi_res_JSON = RestClient.get "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=#{params['latitude']},#{params['longitude']}&radius=1500&type=restaurant&key=AIzaSyDZPgGlSIGXZmfNNkT7LoO8cr7joNMyqqo"
         parsed_POI = JSON.parse(poi_res_JSON) 
-        byebug
+        # byebug
         render json: parsed_POI["results"]
 
         # user = User.from_omniauth(parsed_token)
